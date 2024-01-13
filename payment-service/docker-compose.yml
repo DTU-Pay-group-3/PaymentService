@@ -1,0 +1,6 @@
+version: '3'
+services:
+  payment-service:
+    image: payment-service
+    build: .
+ 

@@ -17,3 +17,5 @@ buildNumber.properties
 .classpath
 
 .DS_Store
+
+.idea
