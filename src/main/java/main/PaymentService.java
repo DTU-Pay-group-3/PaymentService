@@ -5,6 +5,7 @@ import dtu.ws.fastmoney.BankServiceService;
 import io.cucumber.java.it.Ma;
 import messaging.Event;
 import messaging.MessageQueue;
+import models.DTUPayAccount;
 import models.Merchant;
 import models.Payment;
 
@@ -44,14 +45,14 @@ public class PaymentService {
 
         try {
             bank.transferMoneyFromTo(userBankAccount, merchantBankAccount, payment.getAmount(), payment.getDescription());
-            Event success = new Event("PaymentCompleted", new Object[]{payment.getDescription(), paymentCorrelationId});
+            Event success = new Event("PaymentCompleted", new Object[]{payment.getPaymentId(), paymentCorrelationId});
             System.out.println("Publishing PaymentCompleted event " + success);
             // probably should not be stored here but in reports service
             payments.put(payment.getDescription(),payment);
             queue.publish(success);
         } catch (Exception e) {
             System.out.println(e.getMessage());
-            Event fail = new Event("PaymentFailed", new Object[]{payment.getDescription(), paymentCorrelationId});
+            Event fail = new Event("PaymentFailed", new Object[]{payment.getPaymentId(), paymentCorrelationId});
             System.out.println("Publishing PaymentFailed event");
             queue.publish(fail);
         }
@@ -67,10 +68,10 @@ public class PaymentService {
     }
 
     public void handleBankAccReturned(Event ev) {
-        var bankAcc = ev.getArgument(0, String.class);
-        System.out.println("Event BankAccReturned found with id " + bankAcc);
+        var dtuUser = ev.getArgument(0, DTUPayAccount.class);
+        System.out.println("Event BankAccReturned found with id " + dtuUser.getAccountNumber());
         var correlationid = ev.getArgument(1, CorrelationId.class);
-        correlations.get(correlationid).complete(bankAcc);
+        correlations.get(correlationid).complete(dtuUser.getAccountNumber());
     }
 
     public void handleBankAccFailed(Event ev) {

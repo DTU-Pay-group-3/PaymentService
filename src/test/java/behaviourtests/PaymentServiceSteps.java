@@ -19,11 +19,13 @@ import main.CorrelationId;
 import main.PaymentService;
 import messaging.Event;
 import messaging.MessageQueue;
+import models.DTUPayAccount;
 import models.Payment;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -75,18 +77,18 @@ public class PaymentServiceSteps {
     @Before
     public void SetupAccounts() {
 
-        customer.setFirstName("VeryCoolFName");
-        customer.setLastName("VeryCoolLName");
-        customer.setCprNumber("101011011010");
+        customer.setFirstName("VeryCoolFName1");
+        customer.setLastName("VeryCoolLName1");
+        customer.setCprNumber("10101101101011");
 
-        customer2.setFirstName("VeryCoolFName2");
-        customer2.setLastName("VeryCoolLName2");
-        customer2.setCprNumber("0100010100111");
+        customer2.setFirstName("VeryCoolFName21");
+        customer2.setLastName("VeryCoolLName21");
+        customer2.setCprNumber("010001011100111");
 
 
-        merchant.setFirstName("VeryCoolFName3");
-        merchant.setLastName("VeryCoolLName3");
-        merchant.setCprNumber("0010111010110");
+        merchant.setFirstName("VeryCoolFName31");
+        merchant.setLastName("VeryCoolLName31");
+        merchant.setCprNumber("0010111010110111");
 
         try {
             customerBankID = bank.createAccountWithBalance(customer, BigDecimal.valueOf(500));
@@ -109,10 +111,10 @@ public class PaymentServiceSteps {
         merchantID = "merchid1";
         customerId = "custid1";
         customerToken = arg1;
-        payment = new Payment(merchantID, customerToken, "PaymentDesc1", BigDecimal.valueOf(arg2));
+        payment = new Payment(UUID.randomUUID().toString(),merchantID, customerToken, "PaymentDesc1", BigDecimal.valueOf(arg2));
         correlationPaymentReq = CorrelationId.randomId();
 
-        publishedEvents.put(payment.getDescription(), new CompletableFuture<>());
+        publishedEvents.put(payment.getPaymentId(), new CompletableFuture<>());
         publishedEvents.put(customerToken, new CompletableFuture<>());
         publishedEvents.put(payment.getMerchantID(), new CompletableFuture<>());
         publishedEvents.put(customerId, new CompletableFuture<>());
@@ -126,11 +128,11 @@ public class PaymentServiceSteps {
     public void aSecondEventIsPublishedWithTokenAndAmount(String arg0, String arg1, int arg2) {
         customerId2 = "custid2";
         customerToken2 = arg1;
-        payment2 = new Payment("merchid2", customerToken2, "PaymentDesc2", BigDecimal.valueOf(arg2));
+        payment2 = new Payment(UUID.randomUUID().toString(),"merchid2", customerToken2, "PaymentDesc2", BigDecimal.valueOf(arg2));
 
         correlationPaymentReq2 = CorrelationId.randomId();
         publishedEvents.put(customerToken2, new CompletableFuture<>());
-        publishedEvents.put(payment2.getDescription(), new CompletableFuture<>());
+        publishedEvents.put(payment2.getPaymentId(), new CompletableFuture<>());
         publishedEvents.put(payment2.getMerchantID(), new CompletableFuture<>());
         publishedEvents.put(customerId2, new CompletableFuture<>());
 
@@ -166,60 +168,25 @@ public class PaymentServiceSteps {
 
     }
 
-    @Then("{int} {string} events are published")
-    public void eventsArePublished(int arg0, String arg1) {
-        new Thread(() -> {
-            Event event = publishedEvents.get(payment.getMerchantID()).join();
-            var st1 = event.getArgument(0, String.class);
-            var correlationId1 = event.getArgument(1, CorrelationId.class);
-            correlationIdsBankAcc.put(st1, correlationId1);
-            service.handleBankAccReturned(new Event("BankAccReturned", new Object[]{merchantBankID, correlationIdsBankAcc.get(payment.getMerchantID())}));
-        }).start();
-
-        new Thread(() -> {
-            Event event2 = publishedEvents.get(customerId).join();
-            var st2 = event2.getArgument(0, String.class);
-            var correlationId2 = event2.getArgument(1, CorrelationId.class);
-            correlationIdsBankAcc.put(st2, correlationId2);
-            service.handleBankAccReturned(new Event("BankAccReturned", new Object[]{customerBankID, correlationIdsBankAcc.get(customerId)}));
-        }).start();
-
-        new Thread(() -> {
-            Event event3 = publishedEvents.get(payment2.getMerchantID()).join();
-            var st3 = event3.getArgument(0, String.class);
-            var correlationId3 = event3.getArgument(1, CorrelationId.class);
-            correlationIdsBankAcc.put(st3, correlationId3);
-            service.handleBankAccReturned(new Event("BankAccReturned", new Object[]{merchantBankID, correlationIdsBankAcc.get(payment2.getMerchantID())}));
-
-        }).start();
-
-        new Thread(() -> {
-            Event event4 = publishedEvents.get(customerId2).join();
-            var st4 = event4.getArgument(0, String.class);
-            var correlationId4 = event4.getArgument(1, CorrelationId.class);
-            correlationIdsBankAcc.put(st4, correlationId4);
-            service.handleBankAccReturned(new Event("BankAccReturned", new Object[]{customerBankID2, correlationIdsBankAcc.get(customerId2)}));
-        }).start();
-
-    }
-
     @Then("The first payment success event is pushed with the same correlation id as request")
     public void theFirstPaymentSuccessEventIsPushedWithTheSameCorrelationIdAsRequest() {
         //check for event "PaymentCompleted"
-        var result1 = publishedEvents.get("PaymentDesc1").join();
+        var result1 = publishedEvents.get(payment.getPaymentId()).join();
 
+        assertEquals(result1.getType(),"PaymentCompleted");
         assertEquals(result1.getArgument(1, CorrelationId.class), correlationPaymentReq);
-        assertEquals(result1.getArgument(0, String.class), "PaymentDesc1");
+        assertEquals(result1.getArgument(0, String.class), payment.getPaymentId());
 
     }
 
     @And("The Second payment success event is pushed with the same correlation id as request")
     public void theSecondPaymentSuccessEventIsPushedWithTheSameCorrelationIdAsRequest() {
         //check for "PaymentCompleted"
-        var result = publishedEvents.get("PaymentDesc2").join();
+        var result = publishedEvents.get(payment2.getPaymentId()).join();
 
+        assertEquals(result.getType(),"PaymentCompleted");
         assertEquals(result.getArgument(1, CorrelationId.class), correlationPaymentReq2);
-        assertEquals(result.getArgument(0, String.class), "PaymentDesc2");
+        assertEquals(result.getArgument(0, String.class), payment2.getPaymentId());
     }
 
 
@@ -270,7 +237,9 @@ public class PaymentServiceSteps {
             var correlationId1 = event.getArgument(1, CorrelationId.class);
             correlationIdsBankAcc.put(st1, correlationId1);
             //await correlationIdsBankAcc.get(payment.getMerchantID())
-            service.handleBankAccReturned(new Event("BankAccReturned", new Object[]{merchantBankID, correlationIdsBankAcc.get(payment.getMerchantID())}));
+            DTUPayAccount user= new DTUPayAccount("asd","asd","asd",merchantBankID);
+
+            service.handleBankAccReturned(new Event("BankAccReturned", new Object[]{user, correlationIdsBankAcc.get(payment.getMerchantID())}));
         }).start();
 
         new Thread(() -> {
@@ -279,7 +248,9 @@ public class PaymentServiceSteps {
             var correlationId2 = event2.getArgument(1, CorrelationId.class);
             correlationIdsBankAcc.put(st2, correlationId2);
             //await response correlationIdsBankAcc.get(customerId)
-            service.handleBankAccReturned(new Event("BankAccReturned", new Object[]{customerBankID, correlationIdsBankAcc.get(customerId)}));
+            DTUPayAccount user= new DTUPayAccount("asd","asd","asd",customerBankID);
+
+            service.handleBankAccReturned(new Event("BankAccReturned", new Object[]{user, correlationIdsBankAcc.get(customerId)}));
         }).start();
 
     }
@@ -292,8 +263,10 @@ public class PaymentServiceSteps {
             var st3 = event3.getArgument(0, String.class);
             var correlationId3 = event3.getArgument(1, CorrelationId.class);
             correlationIdsBankAcc.put(st3, correlationId3);
+            DTUPayAccount user= new DTUPayAccount("asd","asd","asd",merchantBankID);
+
             //await response
-            service.handleBankAccReturned(new Event("BankAccReturned", new Object[]{merchantBankID, correlationIdsBankAcc.get(payment2.getMerchantID())}));
+            service.handleBankAccReturned(new Event("BankAccReturned", new Object[]{user, correlationIdsBankAcc.get(payment2.getMerchantID())}));
 
         }).start();
 
@@ -302,8 +275,10 @@ public class PaymentServiceSteps {
             var st4 = event4.getArgument(0, String.class);
             var correlationId4 = event4.getArgument(1, CorrelationId.class);
             correlationIdsBankAcc.put(st4, correlationId4);
+            DTUPayAccount user= new DTUPayAccount("asd","asd","asd",customerBankID2);
+
             //await response
-            service.handleBankAccReturned(new Event("BankAccReturned", new Object[]{customerBankID2, correlationIdsBankAcc.get(customerId2)}));
+            service.handleBankAccReturned(new Event("BankAccReturned", new Object[]{user, correlationIdsBankAcc.get(customerId2)}));
         }).start();
     }
 
