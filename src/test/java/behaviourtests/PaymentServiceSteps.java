@@ -75,22 +75,22 @@ public class PaymentServiceSteps {
     @Before
     public void SetupAccounts() {
 
-        customer.setFirstName("HelloWorld12");
-        customer.setLastName("HelloWorldLast12");
-        customer.setCprNumber("15553423212");
+        customer.setFirstName("VeryCoolFName");
+        customer.setLastName("VeryCoolLName");
+        customer.setCprNumber("101011011010");
 
-        customer2.setFirstName("WorldHello12");
-        customer2.setLastName("WorldHelloLast12");
-        customer2.setCprNumber("5634523523412");
+        customer2.setFirstName("VeryCoolFName2");
+        customer2.setLastName("VeryCoolLName2");
+        customer2.setCprNumber("0100010100111");
 
 
-        merchant.setFirstName("MerchantHello12");
-        merchant.setLastName("MerchantHelloLast12");
-        merchant.setCprNumber("46345243212");
+        merchant.setFirstName("VeryCoolFName3");
+        merchant.setLastName("VeryCoolLName3");
+        merchant.setCprNumber("0010111010110");
 
         try {
             customerBankID = bank.createAccountWithBalance(customer, BigDecimal.valueOf(500));
-            customerBankID2 = bank.createAccountWithBalance(customer2, BigDecimal.valueOf(850));
+            customerBankID2 = bank.createAccountWithBalance(customer2, BigDecimal.valueOf(1000));
             merchantBankID = bank.createAccountWithBalance(merchant, BigDecimal.valueOf(500));
         } catch (Exception e) {
             System.out.println("USER EXIST");
@@ -110,14 +110,13 @@ public class PaymentServiceSteps {
         customerId = "custid1";
         customerToken = arg1;
         payment = new Payment(merchantID, customerToken, "PaymentDesc1", BigDecimal.valueOf(arg2));
-
-        publishedEvents.put(customerToken, new CompletableFuture<>());
-        publishedEvents.put(payment.getDescription(), new CompletableFuture<>());
-
-
         correlationPaymentReq = CorrelationId.randomId();
 
-        System.out.println("CORDID " + correlationPaymentReq);
+        publishedEvents.put(payment.getDescription(), new CompletableFuture<>());
+        publishedEvents.put(customerToken, new CompletableFuture<>());
+        publishedEvents.put(payment.getMerchantID(), new CompletableFuture<>());
+        publishedEvents.put(customerId, new CompletableFuture<>());
+
         new Thread(() -> {
             service.makePaymentCorid(new Event(arg0, new Object[]{payment, correlationPaymentReq}));
         }).start();
@@ -128,27 +127,24 @@ public class PaymentServiceSteps {
         customerId2 = "custid2";
         customerToken2 = arg1;
         payment2 = new Payment("merchid2", customerToken2, "PaymentDesc2", BigDecimal.valueOf(arg2));
-        publishedEvents.put(customerToken2, new CompletableFuture<>());
-        publishedEvents.put(payment2.getDescription(), new CompletableFuture<>());
-
 
         correlationPaymentReq2 = CorrelationId.randomId();
-        System.out.println("CORDID2 " + correlationPaymentReq2);
+        publishedEvents.put(customerToken2, new CompletableFuture<>());
+        publishedEvents.put(payment2.getDescription(), new CompletableFuture<>());
+        publishedEvents.put(payment2.getMerchantID(), new CompletableFuture<>());
+        publishedEvents.put(customerId2, new CompletableFuture<>());
+
         new Thread(() -> {
             service.makePaymentCorid(new Event(arg0, new Object[]{payment2, correlationPaymentReq2}));
         }).start();
-
     }
 
     @Then("The {string} event is published to find the first customerID")
     public void theEventIsPublishedToFindTheFirstCustomerID(String arg0) {
         //check if service publishes "ValidateToken" for token1
         Event event = publishedEvents.get(customerToken).join();
-//        assertEquals(string,event.getType());
         var st = event.getArgument(0, String.class);
         var correlationId = event.getArgument(1, CorrelationId.class);
-//        System.out.println(st);
-//        System.out.println(correlationId);
         correlationIdsToken.put(st, correlationId);
     }
 
@@ -156,21 +152,14 @@ public class PaymentServiceSteps {
     public void theEventIsPublishedToFindTheSecondCustomerID(String arg0) {
         //check if service publishes "ValidateToken" for token2
         Event event = publishedEvents.get(customerToken2).join();
-//        assertEquals(string,event.getType());
         var st = event.getArgument(0, String.class);
         var correlationId = event.getArgument(1, CorrelationId.class);
-//        System.out.println(st);
-//        System.out.println(correlationId);
         correlationIdsToken.put(st, correlationId);
     }
 
     @When("The {string} events are published and returns the userids")
     public void theEventsArePublishedAndReturnsTheUserids(String arg0) {
 
-        publishedEvents.put(payment.getMerchantID(), new CompletableFuture<>());
-        publishedEvents.put(customerId, new CompletableFuture<>());
-        publishedEvents.put(payment2.getMerchantID(), new CompletableFuture<>());
-        publishedEvents.put(customerId2, new CompletableFuture<>());
         //token validated
         service.handleTokenValidated(new Event(arg0, new Object[]{customerId, correlationIdsToken.get(customerToken)}));
         service.handleTokenValidated(new Event(arg0, new Object[]{customerId2, correlationIdsToken.get(customerToken2)}));
@@ -214,17 +203,11 @@ public class PaymentServiceSteps {
 
     }
 
-    @When("The {string} event is found and returns the bank accounts and payments are created")
-    public void theEventIsFoundAndReturnsTheBankAccountsAndPaymentsAreCreated(String arg0) {
-
-    }
-
     @Then("The first payment success event is pushed with the same correlation id as request")
     public void theFirstPaymentSuccessEventIsPushedWithTheSameCorrelationIdAsRequest() {
         //check for event "PaymentCompleted"
         var result1 = publishedEvents.get("PaymentDesc1").join();
 
-        System.out.println("CORDID111 " + correlationPaymentReq);
         assertEquals(result1.getArgument(1, CorrelationId.class), correlationPaymentReq);
         assertEquals(result1.getArgument(0, String.class), "PaymentDesc1");
 
@@ -235,32 +218,95 @@ public class PaymentServiceSteps {
         //check for "PaymentCompleted"
         var result = publishedEvents.get("PaymentDesc2").join();
 
-        System.out.println("CORDID2222 " + correlationPaymentReq2);
         assertEquals(result.getArgument(1, CorrelationId.class), correlationPaymentReq2);
         assertEquals(result.getArgument(0, String.class), "PaymentDesc2");
     }
-
-//    Scenario: Payment Request Single -- needs refactoring of steps
-//    Given A "RequestPayment" event is published with token "token" and amount 200
-//    And The payment is being processed
-//    And The "ValidateToken" event is published to find the first customerID
-//    When The "ValidateTokenCompleted" event are published and returns the userid
-//    Then The "RequestBankAccId" events are published
-//    When The "BankAccReturned" event is found and returns the bank accounts and payments are created
-//    Then The first payment success event is pushed with the same correlation id as request
 
 
     @After
     public void Clean() throws BankServiceException_Exception {
         //It is probably not necessary to check the balance since the PaymentComplete event was published
-        System.out.println(bank.getAccount(customerBankID).getBalance());
-        System.out.println(bank.getAccount(merchantBankID).getBalance());
-        System.out.println(bank.getAccount(customerBankID2).getBalance());
+        System.out.println(bank.getAccount(customerBankID).getBalance()+" Cust1 balance");
+        System.out.println(bank.getAccount(customerBankID2).getBalance()+" Cust2 balance");
+        System.out.println(bank.getAccount(merchantBankID).getBalance() +" Merchant balance");
 
         bank.retireAccount(customerBankID);
         bank.retireAccount(customerBankID2);
         bank.retireAccount(merchantBankID);
     }
+
+    @Then("The {string} event is awaited to find the first customerID")
+    public void theEventIsAwaitedToFindTheFirstCustomerID(String arg0) {
+        Event event = publishedEvents.get(customerToken).join();
+        var st = event.getArgument(0, String.class);
+        var correlationId = event.getArgument(1, CorrelationId.class);
+        correlationIdsToken.put(st, correlationId);
+    }
+
+    @And("The {string} event is awaited to find the second customerID")
+    public void theEventIsAwaitedToFindTheSecondCustomerID(String arg0) {
+
+        Event event = publishedEvents.get(customerToken2).join();
+        var st = event.getArgument(0, String.class);
+        var correlationId = event.getArgument(1, CorrelationId.class);
+        correlationIdsToken.put(st, correlationId);
+    }
+
+    @Then("The {string} event is published with the first customer id")
+    public void theEventIsPublishedWithTheFirstCustomerId(String arg0) {
+        service.handleTokenValidated(new Event(arg0, new Object[]{customerId, correlationIdsToken.get(customerToken)}));
+    }
+
+    @And("The {string} event is published with the second customer id")
+    public void theEventIsPublishedWithTheSecondCustomerId(String arg0) {
+        service.handleTokenValidated(new Event(arg0, new Object[]{customerId2, correlationIdsToken.get(customerToken2)}));
+    }
+
+    @Then("The {int} {string} events are published for the first payment")
+    public void theEventsArePublishedForTheFirstPayment(int arg0, String arg1) {
+        new Thread(() -> {
+            Event event = publishedEvents.get(payment.getMerchantID()).join();
+            var st1 = event.getArgument(0, String.class);
+            var correlationId1 = event.getArgument(1, CorrelationId.class);
+            correlationIdsBankAcc.put(st1, correlationId1);
+            //await correlationIdsBankAcc.get(payment.getMerchantID())
+            service.handleBankAccReturned(new Event("BankAccReturned", new Object[]{merchantBankID, correlationIdsBankAcc.get(payment.getMerchantID())}));
+        }).start();
+
+        new Thread(() -> {
+            Event event2 = publishedEvents.get(customerId).join();
+            var st2 = event2.getArgument(0, String.class);
+            var correlationId2 = event2.getArgument(1, CorrelationId.class);
+            correlationIdsBankAcc.put(st2, correlationId2);
+            //await response correlationIdsBankAcc.get(customerId)
+            service.handleBankAccReturned(new Event("BankAccReturned", new Object[]{customerBankID, correlationIdsBankAcc.get(customerId)}));
+        }).start();
+
+    }
+
+    @Then("The {int} {string} events are published for the second payment")
+    public void theEventsArePublishedForTheSecondPayment(int arg0, String arg1) {
+
+        new Thread(() -> {
+            Event event3 = publishedEvents.get(payment2.getMerchantID()).join();
+            var st3 = event3.getArgument(0, String.class);
+            var correlationId3 = event3.getArgument(1, CorrelationId.class);
+            correlationIdsBankAcc.put(st3, correlationId3);
+            //await response
+            service.handleBankAccReturned(new Event("BankAccReturned", new Object[]{merchantBankID, correlationIdsBankAcc.get(payment2.getMerchantID())}));
+
+        }).start();
+
+        new Thread(() -> {
+            Event event4 = publishedEvents.get(customerId2).join();
+            var st4 = event4.getArgument(0, String.class);
+            var correlationId4 = event4.getArgument(1, CorrelationId.class);
+            correlationIdsBankAcc.put(st4, correlationId4);
+            //await response
+            service.handleBankAccReturned(new Event("BankAccReturned", new Object[]{customerBankID2, correlationIdsBankAcc.get(customerId2)}));
+        }).start();
+    }
+
 
 }
 

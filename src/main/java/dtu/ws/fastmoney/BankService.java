@@ -2,7 +2,6 @@
 package dtu.ws.fastmoney;
 
 import java.math.BigDecimal;
-import java.util.List;
 import jakarta.jws.WebMethod;
 import jakarta.jws.WebParam;
 import jakarta.jws.WebResult;
@@ -64,6 +63,23 @@ public interface BankService {
 
     /**
      * 
+     * @param cpr
+     * @return
+     *     returns dtu.ws.fastmoney.Account
+     * @throws BankServiceException_Exception
+     */
+    @WebMethod
+    @WebResult(targetNamespace = "")
+    @RequestWrapper(localName = "getAccountByCprNumber", targetNamespace = "http://fastmoney.ws.dtu/", className = "dtu.ws.fastmoney.GetAccountByCprNumber")
+    @ResponseWrapper(localName = "getAccountByCprNumberResponse", targetNamespace = "http://fastmoney.ws.dtu/", className = "dtu.ws.fastmoney.GetAccountByCprNumberResponse")
+    public Account getAccountByCprNumber(
+        @WebParam(name = "cpr", targetNamespace = "")
+        String cpr)
+        throws BankServiceException_Exception
+    ;
+
+    /**
+     * 
      * @param accountId
      * @throws BankServiceException_Exception
      */
@@ -75,17 +91,6 @@ public interface BankService {
         String accountId)
         throws BankServiceException_Exception
     ;
-
-    /**
-     * 
-     * @return
-     *     returns java.util.List<dtu.ws.fastmoney.AccountInfo>
-     */
-    @WebMethod
-    @WebResult(targetNamespace = "")
-    @RequestWrapper(localName = "getAccounts", targetNamespace = "http://fastmoney.ws.dtu/", className = "dtu.ws.fastmoney.GetAccounts")
-    @ResponseWrapper(localName = "getAccountsResponse", targetNamespace = "http://fastmoney.ws.dtu/", className = "dtu.ws.fastmoney.GetAccountsResponse")
-    public List<AccountInfo> getAccounts();
 
     /**
      * 

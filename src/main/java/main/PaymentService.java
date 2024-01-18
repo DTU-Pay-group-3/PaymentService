@@ -38,8 +38,9 @@ public class PaymentService {
         String userID = ValidateToken(payment.getCustomerToken());
 
         //once you have token continue and send 2 events for bank accounts
-        String merchantBankAccount = RequestBankAccount(payment.getMerchantID());
         String userBankAccount = RequestBankAccount(userID);
+        String merchantBankAccount = RequestBankAccount(payment.getMerchantID());
+
 
         try {
             bank.transferMoneyFromTo(userBankAccount, merchantBankAccount, payment.getAmount(), payment.getDescription());
