@@ -6,7 +6,6 @@ import io.cucumber.java.it.Ma;
 import messaging.Event;
 import messaging.MessageQueue;
 import models.DTUPayAccount;
-import models.Merchant;
 import models.Payment;
 
 import java.util.HashMap;
