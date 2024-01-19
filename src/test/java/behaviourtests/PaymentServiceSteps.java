@@ -25,7 +25,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
-/*Authors : Marian s233481 and Sandra s233484 */
+/*Author Sandra s233484 */
+/*Author Marian s233481*/
 public class PaymentServiceSteps {
 
     private Map<String, CompletableFuture<Event>> publishedEvents = new ConcurrentHashMap<>();
@@ -73,18 +74,18 @@ public class PaymentServiceSteps {
     @Before
     public void SetupAccounts() {
 
-        customer.setFirstName("VeryCoolFName1");
-        customer.setLastName("VeryCoolLName1");
-        customer.setCprNumber("10101101101011");
+        customer.setFirstName("VeryCoolFName13");
+        customer.setLastName("VeryCoolLName13");
+        customer.setCprNumber("101011011010111");
 
-        customer2.setFirstName("VeryCoolFName21");
-        customer2.setLastName("VeryCoolLName21");
-        customer2.setCprNumber("010001011100111");
+        customer2.setFirstName("VeryCoolFName213");
+        customer2.setLastName("VeryCoolLName213");
+        customer2.setCprNumber("0100010111001111");
 
 
-        merchant.setFirstName("VeryCoolFName31");
-        merchant.setLastName("VeryCoolLName31");
-        merchant.setCprNumber("0010111010110111");
+        merchant.setFirstName("VeryCoolFName313");
+        merchant.setLastName("VeryCoolLName313");
+        merchant.setCprNumber("001011101011011111");
 
         try {
             customerBankID = bank.createAccountWithBalance(customer, BigDecimal.valueOf(500));

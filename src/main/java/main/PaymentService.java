@@ -18,6 +18,7 @@ public class PaymentService {
     private Map<CorrelationId, CompletableFuture<String>> correlations = new ConcurrentHashMap<>();
     BankService bank = new BankServiceService().getBankServicePort();
 
+    /*Author Marian s233481*/
     public PaymentService(MessageQueue q) {
         this.queue = q;
         this.queue.addHandler("RequestPayment", this::MakePayment);
@@ -27,6 +28,7 @@ public class PaymentService {
         this.queue.addHandler("BankAccFailed", this::handleBankAccFailed);
     }
 
+    /*Author Marian s233481*/
     public void MakePayment(Event ev) {
 
         // maybe make a new thread for each payment
@@ -58,6 +60,7 @@ public class PaymentService {
         // send log event
     }
 
+    /*Author Sandra s233484 */
     public void handleTokenValidated(Event ev) {
         System.out.println("Event ValidateTokenCompleted found");
         var userID = ev.getArgument(0, String.class);
@@ -65,24 +68,26 @@ public class PaymentService {
         correlations.get(correlationid).complete(userID);
     }
 
+    /*Author Marian s233481 */
     public void handleBankAccReturned(Event ev) {
         var dtuUser = ev.getArgument(0, DTUPayAccount.class);
-        System.out.println("Event BankAccReturned found with id " + dtuUser.getAccountNumber());
         var correlationid = ev.getArgument(1, CorrelationId.class);
         correlations.get(correlationid).complete(dtuUser.getAccountNumber());
     }
 
+    /*Author Sandra s233484 */
     public void handleBankAccFailed(Event ev) {
-        System.out.println("Event BankAccFailed found");
         var correlationid = ev.getArgument(1, CorrelationId.class);
         correlations.get(correlationid).cancel(true);
     }
 
+    /*Author Sandra s233484 */
     public void handleTokenValidatedFailed(Event ev) {
         var correlationid = ev.getArgument(1, CorrelationId.class);
         correlations.get(correlationid).cancel(true);
     }
 
+    /*Author Marian s233481 */
     public String ValidateToken(String userToken) {
         var id = CorrelationId.randomId();
         correlations.put(id, new CompletableFuture<>());
@@ -91,6 +96,7 @@ public class PaymentService {
         return correlations.get(id).join();
     }
 
+    /*Author Marian s233481 */
     public String RequestBankAccount(String userID) {
         var correlationUserId = CorrelationId.randomId();
         correlations.put(correlationUserId, new CompletableFuture<>());

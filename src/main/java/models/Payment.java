@@ -1,12 +1,14 @@
 package models;
 
-import lombok.AllArgsConstructor;
-import lombok.Value;
+import lombok.*;
 
 import java.math.BigDecimal;
-
+/*Author Marian s233481 */
 @AllArgsConstructor
 @Value
+@Data
+@Setter
+@Getter
 public class Payment {
 
     String paymentId;
