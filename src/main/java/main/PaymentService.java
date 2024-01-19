@@ -2,18 +2,16 @@ package main;
 
 import dtu.ws.fastmoney.BankService;
 import dtu.ws.fastmoney.BankServiceService;
-import io.cucumber.java.it.Ma;
 import messaging.Event;
 import messaging.MessageQueue;
 import models.DTUPayAccount;
-import models.Merchant;
 import models.Payment;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-
+/*Authors : Marian s233481 and Sandra s233484 */
 public class PaymentService {
     MessageQueue queue;
     public Map<String, Payment> payments = new HashMap<>();
@@ -22,14 +20,14 @@ public class PaymentService {
 
     public PaymentService(MessageQueue q) {
         this.queue = q;
-        this.queue.addHandler("RequestPayment", this::makePaymentCorid);
+        this.queue.addHandler("RequestPayment", this::MakePayment);
         this.queue.addHandler("ValidateTokenCompleted", this::handleTokenValidated);
         this.queue.addHandler("ValidateTokenFailed", this::handleTokenValidatedFailed);
-        this.queue.addHandler("BankAccReturned", this::handleBankAccReturned);
+        this.queue.addHandler("DTUPayAccountReturned", this::handleBankAccReturned);
         this.queue.addHandler("BankAccFailed", this::handleBankAccFailed);
     }
 
-    public void makePaymentCorid(Event ev) {
+    public void MakePayment(Event ev) {
 
         // maybe make a new thread for each payment
         Payment payment = ev.getArgument(0, Payment.class);
@@ -96,7 +94,7 @@ public class PaymentService {
     public String RequestBankAccount(String userID) {
         var correlationUserId = CorrelationId.randomId();
         correlations.put(correlationUserId, new CompletableFuture<>());
-        Event event = new Event("RequestBankAcc", new Object[]{userID, correlationUserId});
+        Event event = new Event("GetDTUPayAccount", new Object[]{userID, correlationUserId});
         queue.publish(event);
         return correlations.get(correlationUserId).join();
     }

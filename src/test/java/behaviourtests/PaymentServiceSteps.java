@@ -1,10 +1,6 @@
 package behaviourtests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-
 import dtu.ws.fastmoney.BankService;
 import dtu.ws.fastmoney.BankServiceException_Exception;
 import dtu.ws.fastmoney.BankServiceService;
@@ -21,7 +17,6 @@ import messaging.Event;
 import messaging.MessageQueue;
 import models.DTUPayAccount;
 import models.Payment;
-
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,6 +25,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
+/*Authors : Marian s233481 and Sandra s233484 */
 public class PaymentServiceSteps {
 
     private Map<String, CompletableFuture<Event>> publishedEvents = new ConcurrentHashMap<>();
@@ -120,7 +116,7 @@ public class PaymentServiceSteps {
         publishedEvents.put(customerId, new CompletableFuture<>());
 
         new Thread(() -> {
-            service.makePaymentCorid(new Event(arg0, new Object[]{payment, correlationPaymentReq}));
+            service.MakePayment(new Event(arg0, new Object[]{payment, correlationPaymentReq}));
         }).start();
     }
 
@@ -137,7 +133,7 @@ public class PaymentServiceSteps {
         publishedEvents.put(customerId2, new CompletableFuture<>());
 
         new Thread(() -> {
-            service.makePaymentCorid(new Event(arg0, new Object[]{payment2, correlationPaymentReq2}));
+            service.MakePayment(new Event(arg0, new Object[]{payment2, correlationPaymentReq2}));
         }).start();
     }
 
